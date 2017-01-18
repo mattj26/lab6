@@ -1,7 +1,7 @@
 (*********************************************************************
 
-			      CS51 Lab 6
-	    Lazy Programming and Infinite Data Structures
+      CS51 Lab 6
+      Lazy Programming and Infinite Data Structures
  *)
 
    
@@ -38,11 +38,11 @@ module LazyStream =
     (* Extracting the head and tail of a lazy stream *)
     let head (s : 'a stream) : 'a =
       match s() with
-      | Cons(h, t) -> h ;;
+      | Cons(h, _) -> h ;;
       
     let tail (s : 'a stream) : 'a stream =
       match s() with
-      | Cons(h, t) -> t ;;
+      | Cons(_, t) -> t ;;
 
     (* Extracting the first n elements of a stream into a list *)
     let rec first (n : int) (s : 'a stream) : 'a list =
@@ -141,7 +141,8 @@ and again:
 ...
 2 3 5 7 11 13
 
-Implement Eratosthenes sieve to generate an infinite stream of primes. Example:
+Implement Eratosthenes sieve to generate an infinite stream of primes. 
+Example:
 
 # primes = sieve (tail (tail nats)) ;;
 # first 4 primes ;;
@@ -218,8 +219,8 @@ module NativeLazyStreams =
       failwith "smap native not implemented" ;;
 
     let rec smap2 (f : 'a -> 'b -> 'c)
-		  (s1 : 'a stream)
-		  (s2 : 'b stream)
+      (s1 : 'a stream)
+      (s2 : 'b stream)
             : 'c stream = 
       failwith "smap2 native not implemented" ;;
 
