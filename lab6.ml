@@ -1,10 +1,9 @@
-(*********************************************************************
-
-      CS51 Lab 6
-      Lazy Programming and Infinite Data Structures
+(*
+                              CS51 Lab 6
+            Lazy Programming and Infinite Data Structures
+                             Spring 2017
  *)
 
-   
 (*
 Objective:
 
@@ -12,16 +11,7 @@ This lab provides practice with delayed (lazy) computations, both
 through user code and OCaml's built in Lazy module. You will use
 infinite data structures like streams and build new ones like infinite
 trees.
-
- *********************************************************************)
-
-(* A function to time a function application, referred to below. *)
-let time f x = 
-  let start = Unix.gettimeofday () in
-  let v = f x in
-  let finish = Unix.gettimeofday () in
-  Printf.printf "Elapsed time: %.6f\n" (finish -. start);
-  v ;;
+ *)
 
 (*====================================================================
 Part 1: Programming with lazy streams
@@ -38,16 +28,16 @@ module LazyStream =
     (* Extracting the head and tail of a lazy stream *)
     let head (s : 'a stream) : 'a =
       match s() with
-      | Cons(h, _) -> h ;;
+      | Cons(h, _t) -> h ;;
       
     let tail (s : 'a stream) : 'a stream =
       match s() with
-      | Cons(_, t) -> t ;;
+      | Cons(_h, t) -> t ;;
 
     (* Extracting the first n elements of a stream into a list *)
     let rec first (n : int) (s : 'a stream) : 'a list =
       if n = 0 then []
-      else head s :: first (n-1) (tail s) ;;
+      else head s :: first (n - 1) (tail s) ;;
       
     (* Mapping a function lazily over a stream *)
     let rec smap (f : 'a -> 'b) (s : 'a stream) 
@@ -56,16 +46,15 @@ module LazyStream =
 
     (* Mapping a binary function over two streams *)
     let rec smap2 f s1 s2 = 
-      fun () -> Cons(f (head s1) (head s2), 
-                     smap2 f (tail s1) (tail s2)) ;;
+      fun () -> Cons(f (head s1) (head s2), smap2 f (tail s1) (tail s2)) ;;
   end ;;
 
 open LazyStream ;;
 
 (* Here, recalled from lecture, is the definition of an infinite
    stream of ones. *)
-let rec ones () : int str =
-  Cons(1, ones) ;;
+let rec ones : int stream =
+  fun () -> Cons(1, ones) ;;
 
 (* Now you define some useful streams. Some of these were defined in
    lecture, but see if you can come up with the definitions without
@@ -75,13 +64,13 @@ let rec ones () : int str =
    succeeding exercises, you shouldn't feel beholden to how the
    definition is introduced in the skeleton code below. (We'll stop
    mentioning this now, and forevermore.) *)
-let twos () = failwith "twos not implemented" ;;
+let twos = fun () -> failwith "twos not implemented" ;;
 
 (* An infinite stream of threes, built from the ones and twos. *)
-let threes () = failwith "threes not implemented" ;;
+let threes = fun () -> failwith "threes not implemented" ;;
   
 (* An infinite stream of natural numbers (0, 1, 2, 3, ...). *)
-let nats () = failwith "nats not implemented" ;;
+let nats = fun () -> failwith "nats not implemented" ;;
 
 (* Now some new examples. For these, don't build them directly, but
    make use of the stream mapping functions. *)
@@ -149,7 +138,16 @@ Example:
 - : int list = [2; 3; 5; 7]
 
 You probably won't want to generate more than the first four primes
-this way; it'll take too long. You'll address that problem next.  
+this way; it'll take too long. Here are some timings from my laptop:
+
+# call_reporting_time (first 4) primes ;;
+time (msecs): 835.886955
+- : int list = [2; 3; 5; 7]
+# call_reporting_time (first 5) primes ;;
+time (msecs): 92555.676937
+- : int list = [2; 3; 5; 7; 11]
+
+You'll address that problem next.  
  *)
 
 let not_div_by n m = 
@@ -174,7 +172,7 @@ naively as *)
 
 let rec fib x =
   if x < 2 then x
-  else (fib (x-1)) + (fib (x-2)) ;;
+  else (fib (x - 1)) + (fib (x - 2)) ;;
 
 (* Then a delayed computation of the 42nd Fibonacci number would be *)
 
@@ -183,10 +181,10 @@ let fib42 : int Lazy.t =
 
 (* Here, we force the computation twice in a row, timing the two calls:
 
-# time Lazy.force fib42 ;;
+# CS51.call_reporting_time Lazy.force fib42 ;;
 Elapsed time: 13.380860
 - : int = 267914296
-# time Lazy.force fib42 ;;
+# CS51.call_reporting_time Lazy.force fib42 ;;
 Elapsed time: 0.000000
 - : int = 267914296
 
@@ -205,23 +203,23 @@ module NativeLazyStreams =
       
     let head (s : 'a stream) : 'a =
       match Lazy.force s with
-      | Cons(h, _) -> h ;;
+      | Cons(h, _t) -> h ;;
       
     let tail (s : 'a stream) : 'a stream =
       match Lazy.force s with
-      | Cons(_,t) -> t ;;
+      | Cons(_h, t) -> t ;;
       
     let rec first (n : int) (s : 'a stream) : 'a list =
       if n = 0 then []
-      else head s :: first (n-1) (tail s) ;;
+      else head s :: first (n - 1) (tail s) ;;
 
     let rec smap (f : 'a -> 'b) (s : 'a stream) : 'b stream =
       failwith "smap native not implemented" ;;
 
     let rec smap2 (f : 'a -> 'b -> 'c)
-      (s1 : 'a stream)
-      (s2 : 'b stream)
-            : 'c stream = 
+                  (s1 : 'a stream)
+                  (s2 : 'b stream)
+                  : 'c stream = 
       failwith "smap2 native not implemented" ;;
 
     let rec sfilter (pred : 'a -> bool) (s : 'a stream) : 'a stream =
@@ -237,16 +235,16 @@ let rec fibs =
 
 (* This version is much faster, even the first time around. Why? 
 
-# time (first 50) fibs ;;
-Elapsed time: 0.000024
+# CS51.call_reporting_time (first 50) fibs ;;
+time (msecs): 0.029087
 - : int list =
 [0; 1; 1; 2; 3; 5; 8; 13; 21; 34; 55; 89; 144; 233; 377; 610; 987; 1597;
  2584; 4181; 6765; 10946; 17711; 28657; 46368; 75025; 121393; 196418; 317811;
  514229; 832040; 1346269; 2178309; 3524578; 5702887; 9227465; 14930352;
  24157817; 39088169; 63245986; 102334155; 165580141; 267914296; 433494437;
  701408733; 1134903170; 1836311903; 2971215073; 4807526976; 7778742049]
-# time (first 50) fibs ;;
-Elapsed time: 0.000006
+# CS51.call_reporting_time (first 50) fibs ;;
+time (msecs): 0.006914
 - : int list =
 [0; 1; 1; 2; 3; 5; 8; 13; 21; 34; 55; 89; 144; 233; 377; 610; 987; 1597;
  2584; 4181; 6765; 10946; 17711; 28657; 46368; 75025; 121393; 196418; 317811;
